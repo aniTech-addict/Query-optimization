@@ -1,0 +1,21 @@
+{
+  "servers": {
+    "mongoose-optimizer": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["src/mcp/index.js"],
+      "env": {
+        "GEMINI_API_KEY": "${input:geminiApiKey}",
+        "WORKSPACE_ROOT": "${workspaceFolder}"
+      }
+    }
+  },
+  "inputs": [
+    {
+      "id": "geminiApiKey",
+      "type": "promptString",
+      "description": "Enter your Gemini API key",
+      "password": true
+    }
+  ]
+}

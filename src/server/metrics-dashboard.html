@@ -1,0 +1,1254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mongoose Metrics Dashboard</title>
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --panel: #ffffff;
+      --panel-2: #f1f5f9;
+      --text: #0f172a;
+      --muted: #64748b;
+      --accent: #0ea5e9;
+      --warn: #f59e0b;
+      --danger: #ef4444;
+      --ok: #22c55e;
+      --line: #cbd5e1;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Manrope", "Segoe UI", sans-serif;
+      color: var(--text);
+      background: radial-gradient(circle at 15% 20%, #dbeafe 0%, var(--bg) 45%) no-repeat;
+      min-height: 100vh;
+    }
+
+    .wrap {
+      width: min(1100px, 95vw);
+      margin: 1.5rem auto 2.5rem;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(1.4rem, 2vw, 2rem);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1rem;
+      padding: 1rem;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(241, 245, 249, 0.95));
+      backdrop-filter: blur(6px);
+    }
+
+    .topbar .meta {
+      color: var(--muted);
+      font-size: 0.85rem;
+      margin-top: 0.25rem;
+    }
+
+    .actions {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+    }
+
+    button {
+      border: 1px solid var(--line);
+      background: var(--panel-2);
+      color: var(--text);
+      padding: 0.55rem 0.9rem;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    button:hover {
+      border-color: var(--accent);
+    }
+
+    input[type="number"] {
+      width: 90px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 0.5rem;
+      background: #ffffff;
+      color: var(--text);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 0.8rem;
+      margin-bottom: 1rem;
+    }
+
+    .executive {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(239, 246, 255, 0.98));
+      margin-bottom: 1rem;
+      overflow: hidden;
+    }
+
+    .executive h2 {
+      margin: 0;
+      padding: 0.85rem 1rem;
+      font-size: 0.95rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.3);
+      color: #1e293b;
+    }
+
+    .executive-body {
+      padding: 1rem;
+      display: grid;
+      grid-template-columns: 1.25fr 1fr;
+      gap: 1rem;
+    }
+
+    .headline {
+      font-size: 1.05rem;
+      line-height: 1.45;
+      margin-bottom: 0.9rem;
+      color: #1e293b;
+    }
+
+    .exec-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-bottom: 0.9rem;
+    }
+
+    .exec-pill {
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      background: rgba(248, 250, 252, 0.95);
+      color: #1e293b;
+      border-radius: 999px;
+      padding: 0.3rem 0.7rem;
+      font-size: 0.78rem;
+      letter-spacing: 0.03em;
+    }
+
+    .exec-pill strong {
+      color: #0f172a;
+    }
+
+    .insight-list {
+      margin: 0;
+      padding-left: 1rem;
+      color: #334155;
+      font-size: 0.88rem;
+      line-height: 1.5;
+    }
+
+    .score-box {
+      border: 1px solid rgba(148, 163, 184, 0.3);
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.95);
+      padding: 0.9rem;
+    }
+
+    .score-label {
+      color: #94a3b8;
+      text-transform: uppercase;
+      font-size: 0.72rem;
+      letter-spacing: 0.06em;
+    }
+
+    .score-value {
+      font-size: 2rem;
+      font-weight: 800;
+      margin: 0.35rem 0;
+    }
+
+    .score-note {
+      color: #334155;
+      font-size: 0.84rem;
+      line-height: 1.4;
+    }
+
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.98);
+      padding: 0.9rem;
+    }
+
+    .label {
+      color: var(--muted);
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .value {
+      margin-top: 0.35rem;
+      font-size: 1.35rem;
+      font-weight: 700;
+    }
+
+    .section {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.98);
+      margin-bottom: 1rem;
+      overflow: hidden;
+    }
+
+    .section h2 {
+      margin: 0;
+      padding: 0.8rem 1rem;
+      background: rgba(241, 245, 249, 0.95);
+      border-bottom: 1px solid var(--line);
+      font-size: 1rem;
+      letter-spacing: 0.03em;
+    }
+
+    .section-body {
+      padding: 1rem;
+    }
+
+    .chart-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    .chart-card {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #f8fafc;
+      padding: 0.8rem;
+      min-height: 280px;
+    }
+
+    .chart-title {
+      margin: 0 0 0.5rem;
+      font-size: 0.85rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .chart-wrap {
+      position: relative;
+      height: 240px;
+    }
+
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    .row-item {
+      margin-bottom: 0.55rem;
+    }
+
+    .bar-wrap {
+      margin-top: 0.3rem;
+      height: 10px;
+      border-radius: 999px;
+      background: #e2e8f0;
+      border: 1px solid #cbd5e1;
+      overflow: hidden;
+    }
+
+    .bar {
+      height: 100%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--accent), #38bdf8);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+
+    th,
+    td {
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      padding: 0.55rem 0.4rem;
+    }
+
+    th {
+      color: var(--muted);
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .pill {
+      display: inline-block;
+      font-size: 0.75rem;
+      color: #fff;
+      border-radius: 999px;
+      padding: 0.18rem 0.5rem;
+    }
+
+    .pill.error { background: var(--danger); }
+    .pill.warning { background: var(--warn); color: #111827; }
+    .pill.info { background: #3b82f6; }
+    .pill.hint { background: var(--ok); color: #111827; }
+
+    .small {
+      color: var(--muted);
+      font-size: 0.8rem;
+    }
+
+    .error-box {
+      display: none;
+      margin-bottom: 1rem;
+      border: 1px solid #7f1d1d;
+      background: rgba(254, 226, 226, 0.8);
+      color: #991b1b;
+      border-radius: 10px;
+      padding: 0.75rem;
+      white-space: pre-wrap;
+    }
+
+    .issue-accordion {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #ffffff;
+      margin-bottom: 0.65rem;
+      overflow: hidden;
+    }
+
+    .issue-toggle {
+      width: 100%;
+      border: 0;
+      border-bottom: 1px solid transparent;
+      border-radius: 0;
+      background: linear-gradient(90deg, rgba(248, 250, 252, 0.98), rgba(224, 242, 254, 0.95));
+      color: var(--text);
+      text-align: left;
+      padding: 0.7rem 0.85rem;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      gap: 0.75rem;
+      align-items: center;
+    }
+
+    .issue-toggle:hover {
+      border-bottom-color: var(--line);
+    }
+
+    .issue-toggle .issue-name {
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+
+    .issue-toggle .issue-count {
+      color: var(--muted);
+      font-size: 0.82rem;
+    }
+
+    .issue-content {
+      display: none;
+      padding: 0.85rem;
+      color: #334155;
+      font-size: 0.88rem;
+      line-height: 1.5;
+      border-top: 1px solid var(--line);
+      background: rgba(248, 250, 252, 0.98);
+    }
+
+    .issue-content.open {
+      display: block;
+    }
+
+    .issue-content p {
+      margin: 0 0 0.55rem;
+    }
+
+    .issue-content p:last-child {
+      margin-bottom: 0;
+    }
+
+    .issue-content ul {
+      margin: 0.35rem 0 0.7rem;
+      padding-left: 1.15rem;
+    }
+
+    .issue-content li {
+      margin-bottom: 0.35rem;
+    }
+
+    .issue-detail-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+      margin: 0.7rem 0;
+    }
+
+    .issue-detail-card {
+      border: 1px solid #dbeafe;
+      border-radius: 10px;
+      background: #eff6ff;
+      padding: 0.55rem 0.65rem;
+    }
+
+    .issue-detail-card .k {
+      color: #475569;
+      font-size: 0.74rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .issue-detail-card .v {
+      color: #0f172a;
+      font-size: 0.96rem;
+      font-weight: 700;
+      margin-top: 0.2rem;
+    }
+
+    .score-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.45rem;
+      margin: 0 0 0.55rem;
+    }
+
+    .score-chip {
+      border: 1px solid #bfdbfe;
+      background: #ffffff;
+      color: #1e3a8a;
+      border-radius: 999px;
+      padding: 0.24rem 0.55rem;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+
+    .score-chip.warn {
+      color: #92400e;
+      border-color: #fcd34d;
+      background: #fffbeb;
+    }
+
+    .score-chip.danger {
+      color: #991b1b;
+      border-color: #fca5a5;
+      background: #fef2f2;
+    }
+
+    .detail-list {
+      margin: 0.3rem 0 0.8rem;
+      padding-left: 1.15rem;
+    }
+
+    .detail-list li {
+      margin-bottom: 0.28rem;
+    }
+
+    .finding-item {
+      border: 1px solid #dbeafe;
+      background: #ffffff;
+      border-radius: 8px;
+      padding: 0.45rem 0.55rem;
+      margin-bottom: 0.45rem;
+      list-style: none;
+    }
+
+    .finding-head {
+      color: #1e3a8a;
+      font-size: 0.81rem;
+      font-weight: 700;
+      margin-bottom: 0.2rem;
+    }
+
+    .example-code {
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      padding: 0.45rem;
+      color: #0f172a;
+      font-size: 0.79rem;
+      margin-top: 0.28rem;
+      white-space: normal;
+      word-break: break-word;
+      font-family: "JetBrains Mono", "Consolas", monospace;
+    }
+
+    .example-code {
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 0.5rem;
+      color: #dbeafe;
+      font-size: 0.8rem;
+      margin-top: 0.35rem;
+      white-space: normal;
+      word-break: break-word;
+    }
+
+    @media (max-width: 900px) {
+      .grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .two-col {
+        grid-template-columns: 1fr;
+      }
+
+      .chart-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .topbar {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .executive-body {
+        grid-template-columns: 1fr;
+      }
+
+      .issue-detail-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="topbar">
+      <div>
+        <h1>Mongoose Performance Effect Dashboard</h1>
+        <div class="meta" id="updatedAt">Loading...</div>
+      </div>
+      <div class="actions">
+        <label for="limit" class="small">Top limit</label>
+        <input id="limit" type="number" min="1" max="50" value="10" />
+        <button id="refreshBtn">Refresh</button>
+        <button id="autoBtn">Auto: ON</button>
+      </div>
+    </div>
+
+    <div id="errorBox" class="error-box"></div>
+
+    <section class="executive">
+      <h2>Executive Summary</h2>
+      <div class="executive-body">
+        <div>
+          <div class="headline" id="headlineText">Loading executive summary...</div>
+          <div class="exec-pills" id="execPills"></div>
+          <ul class="insight-list" id="insightList"></ul>
+        </div>
+        <div class="score-box">
+          <div class="score-label">Performance Health Score</div>
+          <div class="score-value" id="healthScore">--</div>
+          <div class="score-note" id="healthNote">Scoring is based on open issue pressure and estimated impact range.</div>
+        </div>
+      </div>
+    </section>
+
+    <div class="grid">
+      <div class="card">
+        <div class="label">Open Issues</div>
+        <div class="value" id="totalIssues">0</div>
+      </div>
+      <div class="card">
+        <div class="label">Current Latency Impact (Risk-Adjusted)</div>
+        <div class="value" id="latencyRange">0 - 0%</div>
+      </div>
+      <div class="card">
+        <div class="label">Current Memory Impact (Risk-Adjusted)</div>
+        <div class="value" id="memoryRange">0 - 0%</div>
+      </div>
+      <div class="card">
+        <div class="label">Resolved Issues</div>
+        <div class="value" id="resolvedIssues">0</div>
+      </div>
+    </div>
+
+    <section class="section">
+      <h2>Current Issues and Degradation Cost</h2>
+      <div class="section-body chart-grid">
+        <div class="chart-card">
+          <p class="chart-title">Severity Mix</p>
+          <div class="chart-wrap"><canvas id="severityChart"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <p class="chart-title">Issue Type Distribution (Open)</p>
+          <div class="chart-wrap"><canvas id="issueTypeChart"></canvas></div>
+        </div>
+      </div>
+
+      <div class="section-body">
+        <h3>Issue Briefs (Click To Expand)</h3>
+        <div id="issueBriefs"></div>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Performance Improvement (Potential vs Realized)</h2>
+      <div class="section-body chart-grid">
+        <div class="chart-card">
+          <p class="chart-title">Potential vs Realized Improvement (%)</p>
+          <div class="chart-wrap"><canvas id="improvementChart"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <p class="chart-title">Improvement Summary</p>
+          <div id="improvementSummary"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>High Issue Areas</h2>
+      <div class="section-body chart-grid">
+        <div class="chart-card">
+          <p class="chart-title">Top Models/Collections (Open)</p>
+          <div class="chart-wrap"><canvas id="modelHotspotChart"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <p class="chart-title">Top Issue Types (Open)</p>
+          <div class="chart-wrap"><canvas id="issueHotspotChart"></canvas></div>
+        </div>
+      </div>
+
+      <div class="section-body two-col">
+        <div>
+          <h3>By Model/Collection</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Model</th>
+                <th>Error</th>
+                <th>Error %</th>
+                <th>Open</th>
+                <th>Open %</th>
+              </tr>
+            </thead>
+            <tbody id="modelTable"></tbody>
+          </table>
+        </div>
+        <div>
+          <h3>By Issue Type</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Issue Type</th>
+                <th>Error</th>
+                <th>Error %</th>
+                <th>Open</th>
+                <th>Open %</th>
+              </tr>
+            </thead>
+            <tbody id="issueTable"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <script>
+    const updatedAtEl = document.getElementById('updatedAt');
+    const errorBoxEl = document.getElementById('errorBox');
+    const refreshBtn = document.getElementById('refreshBtn');
+    const autoBtn = document.getElementById('autoBtn');
+    const limitInput = document.getElementById('limit');
+
+    let autoRefresh = true;
+    let timerId = null;
+    const charts = {};
+
+    const ISSUE_BRIEFS = {
+      n_plus_one: {
+        explanation: 'A query is executed repeatedly inside a loop, causing many database round trips and high latency under load.',
+        fix: 'Replace looped lookups with one batched query using $in, aggregation, or a targeted populate strategy.',
+      },
+      missing_lean: {
+        explanation: 'Read-only queries return full Mongoose documents, adding hydration overhead and extra memory cost.',
+        fix: 'Append .lean() to read paths that do not require document methods or virtual mutation.',
+      },
+      find_instead_of_findone: {
+        explanation: 'Using find() when only one document is expected can read and allocate more data than needed.',
+        fix: 'Use findOne() with selective projection and indexes for single-document lookup paths.',
+      },
+      no_pagination: {
+        explanation: 'Unpaginated collection reads can grow unbounded as data increases, degrading response time.',
+        fix: 'Add limit/skip or cursor-based pagination and return bounded result sets.',
+      },
+      unbounded_query: {
+        explanation: 'Broad reads without filters or limits can trigger expensive scans and large in-memory payloads.',
+        fix: 'Introduce selective filters, indexes, projection, and limits to constrain each query.',
+      },
+      unbounded_aggregation: {
+        explanation: 'Aggregation pipelines without early $match/$limit process too much data in later stages.',
+        fix: 'Push $match and $limit to early stages and keep pipeline outputs narrow with projection.',
+      },
+      missing_select: {
+        explanation: 'Fetching entire documents when only a few fields are required increases transfer and memory cost.',
+        fix: 'Use .select() to fetch only required fields for each endpoint use case.',
+      },
+      deep_populate: {
+        explanation: 'Deep nested populate chains can produce heavy joins and oversized payload graphs.',
+        fix: 'Flatten retrieval paths, add selective fields, and consider pre-joined read models where needed.',
+      },
+      regex_without_index: {
+        explanation: 'Regex patterns without index support often cause collection scans and unpredictable latency spikes.',
+        fix: 'Use anchored patterns, dedicated indexes, or alternative search strategies for large datasets.',
+      },
+      missing_compound_index: {
+        explanation: 'Multi-field filters without matching compound indexes force inefficient query plans.',
+        fix: 'Create compound indexes that align with your most frequent filter and sort patterns.',
+      },
+      sequential_queries: {
+        explanation: 'Independent queries executed one by one increase wall-clock latency.',
+        fix: 'Parallelize independent operations with Promise.all or consolidate into fewer queries.',
+      },
+      loop_deletes: {
+        explanation: 'Deleting documents one at a time in loops increases round trips and transaction overhead.',
+        fix: 'Use deleteMany with a set-based filter and execute in controlled batches when needed.',
+      },
+      loop_inserts: {
+        explanation: 'Repeated single inserts are slower and can bottleneck write throughput.',
+        fix: 'Use insertMany or bulkWrite with tuned batch sizes for high-volume writes.',
+      },
+      redundant_queries: {
+        explanation: 'Multiple queries fetch overlapping data that could be answered in a single query.',
+        fix: 'Merge query intents or reuse prior results to eliminate duplicate database work.',
+      },
+      missing_exec: {
+        explanation: 'Implicit query execution patterns can reduce stack clarity and make async paths harder to reason about.',
+        fix: 'Use explicit .exec() on query chains for clearer promise flow and diagnostics.',
+      },
+      fetch_modify_save: {
+        explanation: 'Read-modify-write cycles introduce extra network hops and race-condition windows.',
+        fix: 'Use atomic updates (updateOne/findOneAndUpdate with operators) where business logic allows.',
+      },
+      missing_transaction: {
+        explanation: 'Cross-document write flows without transactions risk partial updates during failures.',
+        fix: 'Wrap multi-step writes in a session transaction when atomicity across collections is required.',
+      },
+      schema_index_improvement: {
+        explanation: 'Schema/index design does not fully match high-frequency access patterns.',
+        fix: 'Add or tune indexes based on real query shapes and observed slow operations.',
+      },
+      other: {
+        explanation: 'This issue was detected but did not match a strict category mapping.',
+        fix: 'Inspect the highlighted code path and apply bounded reads, lean docs, and index-aware query design.',
+      },
+    };
+
+    const PALETTE = {
+      error: '#ef4444',
+      warning: '#f59e0b',
+      info: '#3b82f6',
+      hint: '#22c55e',
+      neutral: '#64748b',
+      accentA: '#14b8a6',
+      accentB: '#38bdf8',
+      accentC: '#60a5fa',
+      accentD: '#06b6d4',
+    };
+
+    const CHART_THEME = {
+      label: '#1e293b',
+      tick: '#64748b',
+      grid: '#e2e8f0',
+      border: '#ffffff',
+    };
+
+    function pickRiskLabel(score) {
+      if (score >= 75) return 'Controlled';
+      if (score >= 50) return 'Watch';
+      return 'Critical';
+    }
+
+    function computeHealthScore(current, perf) {
+      const openIssues = Number(current.totalIssues) || 0;
+      const latencyMax = Number(current.estimatedDegradation?.latencyPctRange?.max) || 0;
+      const memoryMax = Number(current.estimatedDegradation?.memoryPctRange?.max) || 0;
+      const resolved = Number(perf?.realized?.issueCount) || 0;
+
+      const pressure = (openIssues * 2) + (latencyMax * 0.22) + (memoryMax * 0.18) - (resolved * 1.2);
+      const bounded = Math.max(0, Math.min(100, Math.round(100 - pressure)));
+      return bounded;
+    }
+
+    function renderExecutive(current, perf, hotspots) {
+      const openIssues = Number(current.totalIssues) || 0;
+      const resolved = Number(perf?.realized?.issueCount) || 0;
+      const topIssue = current.byIssueType?.[0]?.issue_type || 'none';
+      const topModel = hotspots.byModelOrCollection?.[0]?.model_or_collection || 'none';
+      const score = computeHealthScore(current, perf);
+      const risk = pickRiskLabel(score);
+
+      document.getElementById('headlineText').textContent =
+        `All-time scan view shows ${openIssues} open issue(s). The strongest pressure comes from ${topIssue}, concentrated around ${topModel}.`;
+
+      document.getElementById('execPills').innerHTML = `
+        <span class="exec-pill">Risk: <strong>${risk}</strong></span>
+        <span class="exec-pill">Top issue: <strong>${topIssue}</strong></span>
+        <span class="exec-pill">Top hotspot: <strong>${topModel}</strong></span>
+        <span class="exec-pill">Resolved: <strong>${resolved}</strong></span>
+      `;
+
+      document.getElementById('insightList').innerHTML = `
+        <li>Prioritize fixes in <strong>${topModel}</strong> to reduce the broadest impact first.</li>
+        <li>Current potential improvement remains higher than realized, indicating unresolved optimization debt.</li>
+        <li>Track movement in latency/memory max ranges after each fix batch to validate ROI.</li>
+      `;
+
+      const scoreEl = document.getElementById('healthScore');
+      scoreEl.textContent = `${score}/100`;
+      scoreEl.style.color = score >= 75 ? '#22c55e' : score >= 50 ? '#f59e0b' : '#ef4444';
+      document.getElementById('healthNote').textContent =
+        `Risk band: ${risk}. Score factors include open issue count, max latency/memory pressure, and resolved issue contribution.`;
+    }
+
+    function createOrReplaceChart(key, config) {
+      if (charts[key]) charts[key].destroy();
+      charts[key] = new Chart(document.getElementById(key), config);
+    }
+
+    function clampLimit(v) {
+      const n = Number(v);
+      if (!Number.isFinite(n)) return 10;
+      return Math.max(1, Math.min(50, Math.floor(n)));
+    }
+
+    function renderImprovementSummary(perf) {
+      const potential = perf?.potential || {};
+      const realized = perf?.realized || {};
+      document.getElementById('improvementSummary').innerHTML = `
+        <div class="row-item">Potential issues: <strong>${potential.issueCount || 0}</strong></div>
+        <div class="row-item">Potential latency range: <strong>${potential.latencyPctRange?.min || 0}% - ${potential.latencyPctRange?.max || 0}%</strong></div>
+        <div class="row-item">Potential memory range: <strong>${potential.memoryPctRange?.min || 0}% - ${potential.memoryPctRange?.max || 0}%</strong></div>
+        <hr style="border-color: var(--line); border-width: 1px 0 0; margin: 0.75rem 0;" />
+        <div class="row-item">Realized issues: <strong>${realized.issueCount || 0}</strong></div>
+        <div class="row-item">Realized latency range: <strong>${realized.latencyPctRange?.min || 0}% - ${realized.latencyPctRange?.max || 0}%</strong></div>
+        <div class="row-item">Realized memory range: <strong>${realized.memoryPctRange?.min || 0}% - ${realized.memoryPctRange?.max || 0}%</strong></div>
+      `;
+    }
+
+    function renderSeverityChart(bySeverity) {
+      const rows = Array.isArray(bySeverity) ? bySeverity : [];
+      const labels = rows.map((r) => r.severity);
+      const values = rows.map((r) => Number(r.count) || 0);
+      const colors = labels.map((label) => PALETTE[label] || PALETTE.neutral);
+
+      createOrReplaceChart('severityChart', {
+        type: 'doughnut',
+        data: {
+          labels,
+          datasets: [{
+            data: values,
+            backgroundColor: colors,
+            borderColor: CHART_THEME.border,
+            borderWidth: 2,
+          }],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { labels: { color: CHART_THEME.label } },
+          },
+        },
+      });
+    }
+
+    function renderIssueTypeChart(byIssueType) {
+      const rows = (Array.isArray(byIssueType) ? byIssueType : []).slice(0, 8);
+      createOrReplaceChart('issueTypeChart', {
+        type: 'bar',
+        data: {
+          labels: rows.map((r) => r.issue_type),
+          datasets: [{
+            label: 'Open issues',
+            data: rows.map((r) => Number(r.count) || 0),
+            backgroundColor: PALETTE.accentB,
+            borderRadius: 6,
+          }],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            x: { ticks: { color: CHART_THEME.tick }, grid: { color: CHART_THEME.grid } },
+            y: { ticks: { color: CHART_THEME.tick }, grid: { color: CHART_THEME.grid } },
+          },
+          plugins: {
+            legend: { labels: { color: CHART_THEME.label } },
+          },
+        },
+      });
+    }
+
+    function renderImprovementChart(perf) {
+      const potential = perf?.potential || {};
+      const realized = perf?.realized || {};
+      createOrReplaceChart('improvementChart', {
+        type: 'bar',
+        data: {
+          labels: ['Latency Min', 'Latency Max', 'Memory Min', 'Memory Max'],
+          datasets: [
+            {
+              label: 'Potential',
+              data: [
+                potential.latencyPctRange?.min || 0,
+                potential.latencyPctRange?.max || 0,
+                potential.memoryPctRange?.min || 0,
+                potential.memoryPctRange?.max || 0,
+              ],
+              backgroundColor: PALETTE.accentA,
+              borderRadius: 6,
+            },
+            {
+              label: 'Realized',
+              data: [
+                realized.latencyPctRange?.min || 0,
+                realized.latencyPctRange?.max || 0,
+                realized.memoryPctRange?.min || 0,
+                realized.memoryPctRange?.max || 0,
+              ],
+              backgroundColor: PALETTE.accentC,
+              borderRadius: 6,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            x: { ticks: { color: CHART_THEME.tick }, grid: { color: CHART_THEME.grid } },
+            y: { ticks: { color: CHART_THEME.tick }, grid: { color: CHART_THEME.grid } },
+          },
+          plugins: {
+            legend: { labels: { color: CHART_THEME.label } },
+          },
+        },
+      });
+    }
+
+    function renderHotspotCharts(hotspots) {
+      const models = (hotspots?.byModelOrCollection || []).slice(0, 10);
+      const issueTypes = (hotspots?.byIssueType || []).slice(0, 10);
+
+      createOrReplaceChart('modelHotspotChart', {
+        type: 'bar',
+        data: {
+          labels: models.map((r) => r.model_or_collection),
+          datasets: [{
+            label: 'Error share (%)',
+            data: models.map((r) => Number(r.error_pct) || 0),
+            backgroundColor: PALETTE.accentD,
+            borderRadius: 6,
+          }],
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            x: { ticks: { color: CHART_THEME.tick }, grid: { color: CHART_THEME.grid } },
+            y: { ticks: { color: CHART_THEME.tick }, grid: { color: CHART_THEME.grid } },
+          },
+          plugins: {
+            legend: { labels: { color: CHART_THEME.label } },
+          },
+        },
+      });
+
+      createOrReplaceChart('issueHotspotChart', {
+        type: 'bar',
+        data: {
+          labels: issueTypes.map((r) => r.issue_type),
+          datasets: [{
+            label: 'Error share (%)',
+            data: issueTypes.map((r) => Number(r.error_pct) || 0),
+            backgroundColor: '#0ea5e9',
+            borderRadius: 6,
+          }],
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            x: { ticks: { color: CHART_THEME.tick }, grid: { color: CHART_THEME.grid } },
+            y: { ticks: { color: CHART_THEME.tick }, grid: { color: CHART_THEME.grid } },
+          },
+          plugins: {
+            legend: { labels: { color: CHART_THEME.label } },
+          },
+        },
+      });
+    }
+
+    function renderHotspotTable(targetEl, rows, labelKey) {
+      if (!Array.isArray(rows) || rows.length === 0) {
+        targetEl.innerHTML = '<tr><td colspan="5" class="small">No data yet.</td></tr>';
+        return;
+      }
+      targetEl.innerHTML = rows.map((r) => `
+        <tr>
+          <td>${r[labelKey]}</td>
+          <td>${r.error_count || 0}</td>
+          <td>${r.error_pct || 0}%</td>
+          <td>${r.open_count || 0}</td>
+          <td>${r.open_pct || 0}%</td>
+        </tr>
+      `).join('');
+    }
+
+    function escapeHtml(value) {
+      return String(value || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function formatTimeAgo(iso) {
+      if (!iso) return 'n/a';
+      const diffMs = Date.now() - new Date(iso).getTime();
+      if (!Number.isFinite(diffMs) || diffMs < 0) return 'n/a';
+      const hours = Math.floor(diffMs / (1000 * 60 * 60));
+      if (hours < 24) return `${hours}h ago`;
+      const days = Math.floor(hours / 24);
+      return `${days}d ago`;
+    }
+
+    function scoreClass(score) {
+      if (score >= 75) return 'danger';
+      if (score >= 50) return 'warn';
+      return '';
+    }
+
+    function renderIssueBriefs(byIssueType, issueDetailRows) {
+      const rows = Array.isArray(byIssueType) ? byIssueType : [];
+      const details = Array.isArray(issueDetailRows) ? issueDetailRows : [];
+      const detailMap = new Map(details.map((d) => [d.issueType, d]));
+      const container = document.getElementById('issueBriefs');
+
+      if (rows.length === 0) {
+        container.innerHTML = '<div class="small">No issues found yet.</div>';
+        return;
+      }
+
+      container.innerHTML = rows.map((row, idx) => {
+        const type = row.issue_type || 'other';
+        const count = Number(row.count) || 0;
+        const brief = ISSUE_BRIEFS[type] || ISSUE_BRIEFS.other;
+        const detail = detailMap.get(type);
+        const severityRows = detail?.severityBreakdown || [];
+        const topModelRows = detail?.topModels || [];
+        const examples = detail?.recentExamples || [];
+        const priorityScore = Number(detail?.scoring?.priorityScore) || 0;
+        const confidenceScore = Number(detail?.scoring?.confidenceScore) || 0;
+        const topModel = topModelRows[0] || null;
+        const contentId = `issue-content-${idx}`;
+
+        const severityHtml = severityRows.length > 0
+          ? `<ul class="detail-list">${severityRows.map((s) => `<li><strong>${escapeHtml(s.severity)}:</strong> ${s.count} (${s.pct || 0}%)</li>`).join('')}</ul>`
+          : '<div class="small">No open severity breakdown available.</div>';
+
+        const topModelsHtml = topModelRows.length > 0
+          ? `<ul class="detail-list">${topModelRows.map((m) => `<li><strong>${escapeHtml(m.model_or_collection)}:</strong> ${m.count} open (${m.share_pct || 0}% share)</li>`).join('')}</ul>`
+          : '<div class="small">No model concentration available.</div>';
+
+        const findingsHtml = examples.length > 0
+          ? examples.map((ex) => {
+              const status = ex.is_open ? 'OPEN' : 'RESOLVED';
+              const snippet = escapeHtml(ex.message).slice(0, 360);
+              const impact = `lat ${ex.latency_min_pct || 0}-${ex.latency_max_pct || 0}% | mem ${ex.memory_min_pct || 0}-${ex.memory_max_pct || 0}%`;
+              const lifecycle = `seen ${formatTimeAgo(ex.last_detected_at)} | first ${formatTimeAgo(ex.first_detected_at)} | occurrences ${ex.occurrence_count || 1}`;
+              return `
+                <li class="finding-item">
+                  <div class="finding-head">${escapeHtml(ex.file_path)}:${ex.line_number || 0} [${escapeHtml(ex.severity)}] (${escapeHtml(ex.model_or_collection)}) - ${status}</div>
+                  <div class="small">${impact}</div>
+                  <div class="small">${lifecycle}</div>
+                  <div class="example-code">${snippet}</div>
+                </li>
+              `;
+            }).join('')
+          : '<li class="finding-item">No concrete examples captured yet.</li>';
+
+        return `
+          <div class="issue-accordion">
+            <button class="issue-toggle" type="button" data-target="${contentId}">
+              <span class="issue-name">${type}</span>
+              <span class="issue-count">Open count: ${count} | Click to expand</span>
+            </button>
+            <div class="issue-content" id="${contentId}">
+              <div class="score-row">
+                <span class="score-chip ${scoreClass(priorityScore)}">Priority: ${escapeHtml(detail?.scoring?.priorityLabel || 'n/a')} (${priorityScore}/100)</span>
+                <span class="score-chip">Confidence: ${escapeHtml(detail?.scoring?.confidenceLabel || 'n/a')} (${confidenceScore}/100)</span>
+                <span class="score-chip">Resolution Rate: ${detail?.resolutionRatePct || 0}%</span>
+              </div>
+
+              <p><strong>Why this matters:</strong> ${brief.explanation}</p>
+              <p><strong>Proposed fix:</strong> ${brief.fix}</p>
+
+              <div class="issue-detail-grid">
+                <div class="issue-detail-card">
+                  <div class="k">Open / Resolved / Total</div>
+                  <div class="v">${detail?.openCount || count} / ${detail?.resolvedCount || 0} / ${detail?.totalCount || count}</div>
+                </div>
+                <div class="issue-detail-card">
+                  <div class="k">Average Impact Profile</div>
+                  <div class="v">Latency ${detail?.avgLatencyPctRange?.min || 0}-${detail?.avgLatencyPctRange?.max || 0}% | Memory ${detail?.avgMemoryPctRange?.min || 0}-${detail?.avgMemoryPctRange?.max || 0}%</div>
+                </div>
+                <div class="issue-detail-card">
+                  <div class="k">Coverage Breadth</div>
+                  <div class="v">${detail?.impactedFileCount || 0} files | ${detail?.impactedModelCount || 0} models</div>
+                </div>
+                <div class="issue-detail-card">
+                  <div class="k">Recency and Aging</div>
+                  <div class="v">Seen ${formatTimeAgo(detail?.lastSeenAt)} | Aging open: ${detail?.agingOpenCount || 0} | New/active 7d: ${detail?.recentSeenCount || 0}</div>
+                </div>
+              </div>
+
+              <p><strong>Severity distribution:</strong></p>
+              ${severityHtml}
+
+              <p><strong>Top impacted models/collections:</strong></p>
+              ${topModelsHtml}
+
+              <p><strong>Action guidance:</strong></p>
+              <ul class="detail-list">
+                <li>Start with <strong>${topModel ? escapeHtml(topModel.model_or_collection) : 'the highest concentration model'}</strong>${topModel ? ` (${topModel.count} open, ${topModel.share_pct || 0}% share)` : ''} to reduce most issue volume quickly.</li>
+                <li>Prioritize this issue in the next sprint if priority score remains above <strong>60</strong> after one refresh window.</li>
+                <li>Use recent examples below to verify fix quality with before/after latency and memory measurements.</li>
+              </ul>
+
+              <p><strong>Recent findings (file:line + message snippets):</strong></p>
+              <ul class="detail-list">
+                ${findingsHtml}
+              </ul>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      const toggles = container.querySelectorAll('.issue-toggle');
+      toggles.forEach((toggleEl) => {
+        toggleEl.addEventListener('click', () => {
+          const targetId = toggleEl.getAttribute('data-target');
+          const contentEl = document.getElementById(targetId);
+          if (!contentEl) return;
+          contentEl.classList.toggle('open');
+        });
+      });
+    }
+
+    async function fetchSummary() {
+      const limit = clampLimit(limitInput.value);
+      limitInput.value = String(limit);
+      const res = await fetch(`/api/metrics/summary?limit=${limit}`);
+      if (!res.ok) {
+        throw new Error(`Request failed (${res.status}): ${await res.text()}`);
+      }
+      return res.json();
+    }
+
+    async function fetchIssueDetails() {
+      try {
+        const res = await fetch('/api/metrics/issue-details?limit=5');
+        if (!res.ok) {
+          return { issueDetails: [], degradedMode: true };
+        }
+        const payload = await res.json();
+        return { ...payload, degradedMode: false };
+      } catch {
+        return { issueDetails: [], degradedMode: true };
+      }
+    }
+
+    async function refreshData() {
+      try {
+        errorBoxEl.style.display = 'none';
+        const [data, issueDetailsData] = await Promise.all([
+          fetchSummary(),
+          fetchIssueDetails(),
+        ]);
+
+        const current = data.currentIssues || {};
+        const perf = data.performanceImprovement || {};
+        const hotspots = data.highIssueAreas || {};
+
+        renderExecutive(current, perf, hotspots);
+
+        document.getElementById('totalIssues').textContent = current.totalIssues || 0;
+        document.getElementById('latencyRange').textContent = `${current.estimatedDegradation?.latencyPctRange?.min || 0} - ${current.estimatedDegradation?.latencyPctRange?.max || 0}%`;
+        document.getElementById('memoryRange').textContent = `${current.estimatedDegradation?.memoryPctRange?.min || 0} - ${current.estimatedDegradation?.memoryPctRange?.max || 0}%`;
+        document.getElementById('resolvedIssues').textContent = perf.realized?.issueCount || 0;
+
+        renderSeverityChart(current.bySeverity);
+        renderIssueTypeChart(current.byIssueType);
+        renderIssueBriefs(current.byIssueType, issueDetailsData.issueDetails || []);
+        renderImprovementChart(perf);
+        renderImprovementSummary(perf);
+        renderHotspotCharts(hotspots);
+
+        renderHotspotTable(document.getElementById('modelTable'), hotspots.byModelOrCollection, 'model_or_collection');
+        renderHotspotTable(document.getElementById('issueTable'), hotspots.byIssueType, 'issue_type');
+
+        const ts = data.generatedAt ? new Date(data.generatedAt).toLocaleString() : new Date().toLocaleString();
+        const detailModeTag = issueDetailsData.degradedMode ? ' | Detail mode: basic' : ' | Detail mode: full';
+        updatedAtEl.textContent = `All-time metrics | Last updated: ${ts}${detailModeTag}`;
+      } catch (err) {
+        errorBoxEl.style.display = 'block';
+        errorBoxEl.textContent = `Dashboard fetch failed. Ensure server is running on port 3456 and metrics endpoints are reachable.\n\n${err.message}`;
+      }
+    }
+
+    function startAutoRefresh() {
+      stopAutoRefresh();
+      timerId = setInterval(() => {
+        if (autoRefresh) refreshData();
+      }, 10000);
+    }
+
+    function stopAutoRefresh() {
+      if (timerId) {
+        clearInterval(timerId);
+        timerId = null;
+      }
+    }
+
+    refreshBtn.addEventListener('click', refreshData);
+    autoBtn.addEventListener('click', () => {
+      autoRefresh = !autoRefresh;
+      autoBtn.textContent = `Auto: ${autoRefresh ? 'ON' : 'OFF'}`;
+      if (autoRefresh) refreshData();
+    });
+
+    limitInput.addEventListener('change', () => {
+      limitInput.value = String(clampLimit(limitInput.value));
+      refreshData();
+    });
+
+    refreshData();
+    startAutoRefresh();
+  </script>
+</body>
+</html>
