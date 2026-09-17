@@ -6,113 +6,18 @@ A VS Code extension that uses **React**, **Express.js**, and a **PostgreSQL + pg
 
 ## Table of Contents
 
-1. [What is PostgreSQL?](#what-is-postgresql)
-2. [What is pgvector?](#what-is-pgvector)
-3. [How Vectors and Similarity Search Work](#how-vectors-and-similarity-search-work)
-4. [Project Structure](#project-structure)
-5. [Prerequisites](#prerequisites)
-6. [Getting Started](#getting-started)
-7. [How the Database is Set Up](#how-the-database-is-set-up)
-8. [How the Code Connects to PostgreSQL](#how-the-code-connects-to-postgresql)
-9. [API Endpoints](#api-endpoints)
-10. [VS Code Commands](#vs-code-commands)
-11. [Useful Docker Commands](#useful-docker-commands)
-12. [Useful psql Commands](#useful-psql-commands)
+1. [Project Structure](#project-structure)
+2. [Prerequisites](#prerequisites)
+3. [Getting Started](#getting-started)
+4. [How the Database is Set Up](#how-the-database-is-set-up)
+5. [How the Code Connects to PostgreSQL](#how-the-code-connects-to-postgresql)
+6. [API Endpoints](#api-endpoints)
+7. [VS Code Commands](#vs-code-commands)
+8. [Useful Docker Commands](#useful-docker-commands)
+9. [Useful psql Commands](#useful-psql-commands)
 
 ---
 
-## What is PostgreSQL?
-
-**PostgreSQL** (often called "Postgres") is a free, open-source **relational database**. Think of it like a super-powered spreadsheet:
-
-- Data is organized into **tables** (like sheets in a spreadsheet).
-- Each table has **columns** (like headers: `name`, `age`, `email`).
-- Each entry is a **row** (like a single line of data).
-- You talk to it using **SQL** (Structured Query Language), a simple language for asking questions about your data.
-
-**Example:**
-
-```sql
--- Create a table
-CREATE TABLE books (
-    id SERIAL PRIMARY KEY,   -- auto-incrementing ID
-    title TEXT NOT NULL,      -- book title (required)
-    author TEXT,              -- author name
-    pages INTEGER             -- number of pages
-);
-
--- Insert a row
-INSERT INTO books (title, author, pages) VALUES ('The Hobbit', 'Tolkien', 310);
-
--- Query rows
-SELECT * FROM books WHERE author = 'Tolkien';
-```
-
-**Key PostgreSQL concepts used in this project:**
-
-| Concept | What it means |
-|---------|---------------|
-| `TABLE` | A structured collection of rows and columns |
-| `PRIMARY KEY` | A column that uniquely identifies each row (like an ID) |
-| `SERIAL` | Auto-incrementing integer — Postgres generates the next number for you |
-| `TEXT` | A column type that stores strings of any length |
-| `UNIQUE` | Ensures no two rows can have the same value in that column |
-| `INDEX` | A behind-the-scenes lookup table that makes searches faster |
-| `INSERT ... ON CONFLICT DO UPDATE` | "Upsert" — insert a new row, or update it if it already exists |
-| `NOW()` | Built-in function that returns the current date and time |
-
----
-
-## What is pgvector?
-
-**pgvector** is an **extension** (a plugin) for PostgreSQL that adds support for **vector** data. It lets you:
-
-1. Store vectors (arrays of numbers) as a column type.
-2. Search for rows whose vectors are "similar" to a given vector.
-
-It's installed with a single SQL command:
-
-```sql
-CREATE EXTENSION IF NOT EXISTS vector;
-```
-
-After that, you can use `vector(N)` as a column type, where `N` is the number of dimensions. In this project, we use `vector(1536)` because that's the standard size for OpenAI embeddings (but you can use any embedding model).
-
----
-
-## How Vectors and Similarity Search Work
-
-### The Problem
-
-Say you have 1,000 text files. A user asks: *"Find files related to authentication."* You can't easily do this with a normal `WHERE content LIKE '%authentication%'` query — that only matches the exact word, not the **meaning**.
-
-### The Solution: Embeddings
-
-An **embedding** is a way to represent text as a list of numbers (a vector). Texts with similar meanings get similar vectors.
-
-```
-"user login"       → [0.12, -0.45, 0.78, 0.33, ...]   (1536 numbers)
-"authentication"   → [0.11, -0.44, 0.80, 0.31, ...]   (very similar!)
-"cooking recipes"  → [0.95, 0.22, -0.10, 0.67, ...]   (very different)
-```
-
-### Cosine Similarity
-
-To measure how similar two vectors are, we use **cosine similarity**. It returns a value between -1 and 1:
-
-- **1** = identical meaning
-- **0** = unrelated
-- **-1** = opposite meaning
-
-In pgvector, the `<=>` operator calculates the **cosine distance** (which is `1 - cosine_similarity`). So a **smaller** distance means **more similar**:
-
-```sql
--- Find the 5 most similar files to a given vector
-SELECT file_name, 1 - (embedding <=> '[0.12, -0.45, ...]') AS similarity
-FROM text_files
-ORDER BY embedding <=> '[0.12, -0.45, ...]'
-LIMIT 5;
-```
 
 ### IVFFlat Index
 
